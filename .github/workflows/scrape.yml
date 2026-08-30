@@ -1,9 +1,14 @@
-name: Scrape Evotec Shop
+name: Scrape Ministry of Hobby
 
 on:
-  # Se ejecuta solo, 2 veces al día (ajusta la hora si quieres, está en UTC)
+  # Una vez al día, pensado para las 07:00 hora de España.
+  # GitHub Actions usa UTC y no ajusta el cambio de hora automáticamente:
+  # 06:00 UTC = 07:00 en horario de invierno (CET) / 08:00 en verano (CEST).
+  # Si quieres que sea siempre puntual a las 7:00 en España, cambia este
+  # número a 05 cuando entre el horario de verano (finales de marzo) y
+  # vuelve a 06 cuando entre el de invierno (finales de octubre).
   schedule:
-    - cron: "0 5 * * *"   # 05:00 UTC (~07:00 hora España en verano)
+    - cron: "0 6 * * *"
   # También se puede lanzar a mano desde la pestaña "Actions" de GitHub
   workflow_dispatch: {}
 
@@ -22,9 +27,9 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r scrapers/requirements.txt
 
-      - name: Ejecutar el scraper de Evotec Shop
+      - name: Ejecutar el scraper de Ministry of Hobby
         working-directory: scrapers
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python evotecshop.py
+        run: python ministryofhobby.py
