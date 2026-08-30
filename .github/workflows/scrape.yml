@@ -20,10 +20,10 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar dependencias
-        run: pip install -r scraper/requirements.txt
+        run: pip install -r scrapers/requirements.txt
 
       - name: Ejecutar el scraper de Evotec Shop
-        working-directory: scraper
+        working-directory: scrapers
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
