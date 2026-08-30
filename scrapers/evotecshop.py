@@ -66,13 +66,22 @@ STORE_NAME = "Evotec Shop"
 # Pausa entre peticiones (segundos). No bajar de 3.
 REQUEST_DELAY_SECONDS = 4
 
-# Identifícate como bot de forma transparente. Cambia el email de contacto.
+# Cabeceras completas, como las que envía un navegador normal. Algunas
+# tiendas con protección anti-bot (Cloudflare, etc.) devuelven 403 si
+# faltan cabeceras como Accept o Accept-Language, aunque el User-Agent
+# sea legítimo y transparente.
 HEADERS = {
     "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 "
         "BuscadorSlotBot/1.0 (+https://github.com/TU_USUARIO/buscador-slot; "
-        "contacto: tu-email@example.com) - proyecto sin animo de lucro, "
-        "1-2 visitas al dia por categoria"
-    )
+        "contacto: tu-email@example.com)"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 REQUEST_TIMEOUT_SECONDS = 20
@@ -122,10 +131,25 @@ def is_out_of_stock(text: str) -> bool:
     return "en reposicion" in lowered or "en reposición" in lowered or "agotado" in lowered
 
 
-def fetch_category_page(url: str, page: int = 1):
+# Sesión reutilizada en todo el scraper: mantiene cookies entre peticiones,
+# igual que haría un navegador normal (algunas protecciones anti-bot lo
+# comprueban).
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
+
+
+def fetch_category_page(url: str, page: int = 1, _retried: bool = False):
     """Descarga una página de categoría (con paginación de PrestaShop)."""
     params = {"page": page} if page > 1 else {}
-    response = requests.get(url, headers=HEADERS, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+    response = SESSION.get(url, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+
+    if response.status_code == 403 and not _retried:
+        # Reintento único tras una pausa más larga: a veces el primer
+        # bloqueo es temporal (rate-limit) y no un bloqueo permanente.
+        print("  [aviso] 403 recibido, esperando 15s y reintentando una vez...")
+        time.sleep(15)
+        return fetch_category_page(url, page, _retried=True)
+
     response.raise_for_status()
     return response.text
 
