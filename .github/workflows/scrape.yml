@@ -1,0 +1,30 @@
+name: Scrape Evotec Shop
+
+on:
+  # Se ejecuta solo, 2 veces al día (ajusta la hora si quieres, está en UTC)
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC (~07:00 hora España en verano)
+  # También se puede lanzar a mano desde la pestaña "Actions" de GitHub
+  workflow_dispatch: {}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r scraper/requirements.txt
+
+      - name: Ejecutar el scraper de Evotec Shop
+        working-directory: scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python evotecshop.py
